@@ -7,52 +7,81 @@
  */
 
 /**
- * Cell object for the crossword grid.
- * Maybe use this for the logic eventually
+ * Represents a single cell in the puzzle grid.
+ * 
+ * Each cell contains information about its state, content, and role in the puzzle.
+ * White cells are part of the puzzle and can contain letters, while black cells
+ * are blocked/inactive areas of the grid.
+ * 
+ * @interface Cell
+ * @example
  * ```typescript
- * {
- *     white: boolean;
- *     answer: string;
- *     number: number;
- *     direction: string;
- * }
+ * // A white cell with the letter 'A' and clue number 1
+ * const cell: Cell = {
+ *   white: true,
+ *   answer: 'A',
+ *   number: 1,
+ *   direction: 'across'
+ * };
+ * 
+ * // A black/blocked cell
+ * const blockedCell: Cell = {
+ *   white: false
+ * };
  * ```
  */
 export interface Cell {
+    /** Whether this cell is active (true) or blocked/black (false) */
     white: boolean;
-/** The correct character */
-    answer?: string; // Correct letter
-/** The clue number. Can be null for white cells */
+    /** The correct letter for this cell (if it's a white cell) */
+    answer?: string;
+    /** The clue number if this cell starts a word */
     number?: number;
-/** Direction of the word. Down, across, both, or null */
+    /** The word direction(s) this cell participates in ('across', 'down', 'both') */
     direction?: string;
 }
 
-/** Custom data type for words placed on the grid.
- * Includes word itself and coordinates.
+/**
+ * Represents a word and its associated metadata in a puzzle.
+ * 
+ * Contains all information needed to place and reference a word in the puzzle,
+ * including its position, direction, clue text, and numbering. Used for both
+ * crossword and find-the-words puzzle types.
+ * 
+ * @interface WordClue
+ * @example
  * ```typescript
- * {
- *     word: string;
- *     clue: string;
- *     x: number;
- *     y: number;
- *     direction: string;
- *     number: number;
- * }
+ * // A complete word entry for a crossword
+ * const wordClue: WordClue = {
+ *   word: "JAVASCRIPT",
+ *   clueText: "Popular programming language",
+ *   x: 2,
+ *   y: 1,
+ *   across: true,
+ *   clueNumber: 7
+ * };
+ * 
+ * // A word for find-the-words (minimal info needed)
+ * const findWord: WordClue = {
+ *   word: "PUZZLE",
+ *   x: 0,
+ *   y: 3,
+ *   across: false
+ * };
  * ```
- * */
+ */
 export interface WordClue {
-    /** The word in question */
+    /** The word itself (uppercase letters only) */
     word: string,
-    /** The text for the clue */
+    /** The clue text for crosswords (optional for find-the-words) */
     clueText?: string,
-    /** (0-indexed) starting x-coordinate of the word on the grid*/
+    /** Starting x-coordinate (column) on the grid (0-indexed) */
     x?: number,
-    /** (0-indexed) starting y-coordinate of the word on the grid*/
+    /** Starting y-coordinate (row) on the grid (0-indexed) */
     y?: number,
-    /** Whether the word is across or down */
+    /** Whether the word runs across (true) or down (false) */
     across?: boolean,
-    /** Number of the clue */
+    /** The numbered clue reference for crosswords */
     clueNumber?: number
 }
 

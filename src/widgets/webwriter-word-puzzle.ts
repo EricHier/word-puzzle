@@ -40,22 +40,69 @@ function stopCtrlPropagation(event: KeyboardEvent): void {
 }
 
 /**
- * Data type for the crossword context.
+ * Represents the current context of a crossword puzzle interaction.
  * 
+ * This interface tracks which clue the user is currently focused on,
+ * including both the direction (across or down) and the specific clue number.
+ * Used for highlighting active clues and navigating between puzzle cells.
+ * 
+ * @interface CwContext
+ * @example
  * ```typescript
- * {
- *   across: boolean,
- *   clue: number
- * }
+ * // Context for across clue #1
+ * const context: CwContext = {
+ *   across: true,
+ *   clue: 1
+ * };
+ * 
+ * // Context for down clue #5
+ * const context: CwContext = {
+ *   across: false,
+ *   clue: 5
+ * };
  * ```
  */
 export interface CwContext {
+    /** Whether this is an across (true) or down (false) clue */
     across: boolean,
+    /** The numbered clue reference */
     clue: number
 }
 
 /**
- * Crossword element for word puzzle widget. Includes grid and clue panel elements.
+ * Main word puzzle widget that supports both crossword and find-the-words puzzle types.
+ * 
+ * This is the primary web component for creating interactive word puzzles. It includes
+ * a customizable grid, clue panels, and interactive solving features. The component
+ * supports two puzzle types: traditional crosswords with numbered clues, and
+ * find-the-words puzzles where users search for hidden words in a grid.
+ * 
+ * @element webwriter-word-puzzle
+ * @since 1.0.0
+ * 
+ * @example
+ * ```html
+ * <!-- Basic crossword puzzle -->
+ * <webwriter-word-puzzle type="crossword"></webwriter-word-puzzle>
+ * 
+ * <!-- Find-the-words puzzle -->
+ * <webwriter-word-puzzle type="find-the-words"></webwriter-word-puzzle>
+ * 
+ * <!-- Crossword with predefined words and clues -->
+ * <webwriter-word-puzzle 
+ *   type="crossword"
+ *   _wordsClues='[{"word":"CAT","clueText":"Feline pet","across":true}]'>
+ * </webwriter-word-puzzle>
+ * ```
+ * 
+ * @fires generateCw - Fired when crossword generation is requested
+ * @fires set-context - Fired when the current clue context changes (across/down, clue number)
+ * @fires set-words-clues - Fired when the words and clues are updated
+ * 
+ * @csspart options - The settings/options panel shown in edit mode
+ * @csspart grid - The puzzle grid container
+ * @csspart clues - The clues panel container
+ * @csspart buttons - The action buttons container
  */
 @localized()
 @customElement("webwriter-word-puzzle")
@@ -64,11 +111,9 @@ export class WebwriterWordPuzzle extends LitElementWw {
     protected localize = LOCALIZE
 
     /**
-     * @constructor
-     * Constructor for the crossword puzzle
+     * Creates a new word puzzle widget.
      * 
-     * Sets the {@link WebwriterWordPuzzle.width | width} and {@link WebwriterWordPuzzle.height | height} attributes
-     * Dispatches an event to generate the crossword grid
+     * @param dimension - The initial grid dimensions (default: 8x8)
      */
     constructor(dimension: number = 8) {
         super()
@@ -110,7 +155,30 @@ export class WebwriterWordPuzzle extends LitElementWw {
     }
 
     /**
-     * The list of words grouped with their clues, direction, and word number.
+     * Array of words and their associated clues, positions, and metadata.
+     * 
+     * Each WordClue object contains:
+     * - word: The word itself
+     * - clueText: The clue text for crosswords
+     * - x, y: Grid coordinates (0-indexed)
+     * - across: Whether the word goes across (true) or down (false)
+     * - clueNumber: The numbered clue reference
+     * 
+     * @attr _wordsClues
+     * @type {WordClue[]}
+     * @example
+     * ```javascript
+     * element._wordsClues = [
+     *   {
+     *     word: "CAT",
+     *     clueText: "Feline pet",
+     *     x: 0,
+     *     y: 0,
+     *     across: true,
+     *     clueNumber: 1
+     *   }
+     * ];
+     * ```
      */
     @property({ type: Array, attribute: true, reflect: true})
     accessor _wordsClues: WordClue[]
@@ -142,19 +210,56 @@ export class WebwriterWordPuzzle extends LitElementWw {
 
 
     /**
-     * Current crossword context; across and clue number
+     * The current crossword context tracking which clue is active.
+     * 
+     * Contains information about the currently selected clue including
+     * whether it's an across or down clue and the clue number.
+     * 
+     * @type {CwContext}
+     * @example
+     * ```javascript
+     * // Set context to across clue #3
+     * element._cwContext = { across: true, clue: 3 };
+     * 
+     * // Set context to down clue #5
+     * element._cwContext = { across: false, clue: 5 };
+     * ```
      */
     @property({ type: Object, state: true, attribute: false})
     _cwContext: CwContext
     
 
     /**
-     * Type of word puzzle
+     * The type of word puzzle to display and interact with.
+     * 
+     * - 'crossword': Traditional crossword with numbered clues and intersecting words
+     * - 'find-the-words': Word search puzzle where users find hidden words in a grid
+     * 
+     * @attr type
+     * @type {'crossword' | 'find-the-words'}
+     * @default 'crossword'
+     * @example
+     * ```html
+     * <!-- Create a crossword puzzle -->
+     * <webwriter-word-puzzle type="crossword"></webwriter-word-puzzle>
+     * 
+     * <!-- Create a find-the-words puzzle -->
+     * <webwriter-word-puzzle type="find-the-words"></webwriter-word-puzzle>
+     * ```
      */
     @property({ type: String, attribute: true, reflect: true })
     public accessor type: 'crossword' | 'find-the-words' = 'crossword';
 
 
+    /**
+     * Updates the words and clues across all child components.
+     * 
+     * Synchronizes the words and clues data between the main component
+     * and its child components (grid, cluebox, and input components).
+     * 
+     * @param wordsClues - Array of word and clue objects to distribute
+     * @internal
+     */
     protected setWordsCluesChildren(wordsClues: WordClue[]) {
         //DEV: console.log("Setting words and clues in children.")
         this._wordsClues = wordsClues
@@ -199,6 +304,16 @@ export class WebwriterWordPuzzle extends LitElementWw {
         this.gridW.generateCrossword(this._wordsClues)
     }
 
+    /**
+     * Handles the preview toggle when switching between edit and view modes.
+     * 
+     * Called when the contenteditable attribute changes, this method
+     * coordinates the preview state across child components.
+     * 
+     * @param newValue - Whether preview mode is enabled
+     * @returns The preview state that was set
+     * @internal
+     */
     protected onPreviewToggle(newValue: boolean): boolean {
         //DEV: console.log("Preview toggled")
         this.clueInpW.onPreviewToggle(newValue)

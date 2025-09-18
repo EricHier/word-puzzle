@@ -1,11 +1,11 @@
 /**
- * Component for cluebox input, author only.
+ * Word and clue input component for word puzzle authoring.
  * 
  * @packageDocumentation
  * @module crossword
  * @mergeModuleWith webwriter-word-puzzles
  */
-import { html, render } from 'lit';
+import { html, render, LitElement } from 'lit';
 import { customElement, property, query } from 'lit/decorators.js';
 import { WebwriterWordPuzzle } from './webwriter-word-puzzle';
 import { WordClue } from '../lib/crossword-gen';
@@ -27,12 +27,34 @@ import LOCALIZE from "../../localization/generated"
 
 
 /**
- * Crossword element for word puzzle widget. Includes grid and clue panel elements.
- * @returns { void } Nothing, but renders the DOM element for the crossword puzzle
+ * Word and clue input interface for puzzle authoring.
+ * 
+ * This component provides the authoring interface for creating word puzzles.
+ * It includes a table-based input system for entering words and clues,
+ * along with controls for generating the puzzle layout. This component
+ * is only visible in edit mode and provides the tools needed to create
+ * and modify puzzle content.
+ * 
+ * @element webwriter-word-puzzle-cluebox-input
+ * @since 1.0.0
+ * 
+ * @example
+ * ```html
+ * <webwriter-word-puzzle-cluebox-input
+ *   ._wordsClues="${currentWords}">
+ * </webwriter-word-puzzle-cluebox-input>
+ * ```
+ * 
+ * @fires generateCw - Fired when the user requests crossword generation
+ * @fires set-words-clues - Fired when words and clues are updated
+ * 
+ * @cssproperty --input-border-color - Border color for input fields
+ * @cssproperty --button-primary-color - Primary color for action buttons
+ * @cssproperty --drawer-background-color - Background color for the input drawer
  */
 @localized()
 @customElement("webwriter-word-puzzle-cluebox-input")
-export class WebwriterWordPuzzleClueboxInput extends LitElememt {
+export class WebwriterWordPuzzleClueboxInput extends LitElement {
     // All methods have the same names as in crosswords-js
 
     public localize = LOCALIZE
@@ -79,9 +101,13 @@ export class WebwriterWordPuzzleClueboxInput extends LitElememt {
     }
 
     /**
-     * Dispatches an event to update the current words and clues.
+     * Dispatches an event to update words and clues in the parent component.
      * 
-     * @param {number} clue the updated clue number
+     * Used to propagate changes from the input component to the main widget
+     * and synchronize the word list across all child components.
+     * 
+     * @param wordsClues - Array of word and clue objects to propagate
+     * @fires set-words-clues - Bubbles up with the new words and clues data
      */
     setWordsClues(wordsClues: WordClue[]): void {
         let setWordsClues = new CustomEvent("set-words-clues", {bubbles: true, composed: true, detail: wordsClues})
@@ -89,7 +115,19 @@ export class WebwriterWordPuzzleClueboxInput extends LitElememt {
     }
 
     /**
-     * Event handler that triggers crossword generation
+     * Initiates automatic crossword generation from current word list.
+     * 
+     * Extracts words from the input table and triggers the generation algorithm
+     * if there are valid words available. This is the main action that creates
+     * the puzzle layout from user-entered words and clues.
+     * 
+     * @fires generateCw - Triggers crossword generation in parent component
+     * 
+     * @example
+     * ```javascript
+     * // Programmatically trigger generation
+     * inputComponent.triggerCwGeneration();
+     * ```
      */
     triggerCwGeneration() {
         this.getNewWords()
@@ -100,9 +138,19 @@ export class WebwriterWordPuzzleClueboxInput extends LitElememt {
     }
 
     /**
-     * Extracts the words from the cluebox.
-     * Calls {@link setWordsClues}
+     * Extracts words and clues from the input table.
      * 
+     * Reads the current state of the word/clue input table and converts
+     * it into a structured WordClue array. Automatically calls setWordsClues
+     * to propagate the changes to other components.
+     * 
+     * @returns The extracted words and clues array
+     * 
+     * @example
+     * ```javascript
+     * // Get current words from the input table
+     * const words = inputComponent.getNewWords();
+     * ```
      */
     getNewWords() {
         let wordsAndClues = []

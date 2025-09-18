@@ -1,11 +1,11 @@
 /**
- * Component for cluebox, for users.
+ * Clue display component for word puzzle widgets.
  * 
  * @packageDocumentation
  * @module crossword
  * @mergeModuleWith webwriter-word-puzzles
  */
-import { html, HTMLTemplateResult } from 'lit';
+import { html, HTMLTemplateResult, LitElement } from 'lit';
 import { customElement, property, query } from 'lit/decorators.js';
 import { CwContext, WebwriterWordPuzzle } from './webwriter-word-puzzle';
 import { WordClue } from '../lib/crossword-gen';
@@ -19,8 +19,27 @@ import "@shoelace-style/shoelace/dist/themes/light.css";
 
 
 /**
- * Crossword element for word puzzle widget. Includes grid and clue panel elements.
- * @returns { void } Nothing, but renders the DOM element for the crossword puzzle
+ * Clue display component for solving word puzzles.
+ * 
+ * This component displays the clues and word lists for both crossword and
+ * find-the-words puzzles. In crossword mode, it shows separate across and
+ * down clue lists. In find-the-words mode, it shows the words to find.
+ * It also handles highlighting the currently active clue.
+ * 
+ * @element webwriter-word-puzzle-cluebox
+ * @since 1.0.0
+ * 
+ * @example
+ * ```html
+ * <webwriter-word-puzzle-cluebox
+ *   ._wordsClues="${puzzleWords}"
+ *   ._cwContext="${currentContext}">
+ * </webwriter-word-puzzle-cluebox>
+ * ```
+ * 
+ * @cssproperty --clue-highlight-color - Background color for the active clue
+ * @cssproperty --clue-text-color - Text color for clues
+ * @cssproperty --clue-number-color - Color for clue numbers
  */
 @localized()
 @customElement("webwriter-word-puzzle-cluebox")

@@ -1,10 +1,10 @@
 /**
- * Main WebWriter Word Puzzles Widget.
+ * Grid component for word puzzle widgets.
  * 
  * @packageDocumentation
  * @module crossword
  */
-import { html } from 'lit';
+import { html, LitElement } from 'lit';
 import { customElement, property, state, query } from 'lit/decorators.js';
 import { WebwriterWordPuzzle, CwContext } from './webwriter-word-puzzle';
 import { WordClue, Cell, defaultCell, newCellDOM, GenerationResults, generateCrossword, generateCrosswordFromList } from '../lib/crossword-gen'
@@ -20,15 +20,44 @@ import "@shoelace-style/shoelace/dist/themes/light.css";
 const DEFAULT_DIMENSION: number = 9
 
 /**
- * Crossword element for word puzzle widget. Includes grid and clue panel elements.
- * @returns { void } Nothing, but renders the DOM element for the crossword puzzle
+ * Interactive grid component for word puzzle widgets.
+ * 
+ * This component renders and manages the puzzle grid where users input letters.
+ * It handles both crossword-style grids with numbered cells and find-the-words
+ * style grids. The grid supports keyboard navigation, cell highlighting,
+ * answer checking, and interactive solving.
+ * 
+ * @element webwriter-word-puzzle-grid
+ * @since 1.0.0
+ * 
+ * @example
+ * ```html
+ * <webwriter-word-puzzle-grid
+ *   .grid="${puzzleGrid}"
+ *   ._wordsClues="${wordsAndClues}">
+ * </webwriter-word-puzzle-grid>
+ * ```
+ * 
+ * @fires set-context - Fired when the user clicks or navigates to a different clue context
+ * @fires set-words-clues - Fired when words and clues are updated
+ * 
+ * @cssproperty --grid-cell-size - Size of individual grid cells
+ * @cssproperty --grid-border-color - Color of grid cell borders
+ * @cssproperty --grid-highlight-color - Background color for highlighted cells
+ * @cssproperty --grid-number-color - Color of clue numbers in cells
  */
 @customElement("webwriter-word-puzzle-grid")
 export class WebwriterWordPuzzleGrid extends LitElement {
     // All methods have the same names as in crosswords-js
 
     /**
-     * Whether the current display is a preview
+     * Whether the grid is in preview mode (read-only) or edit mode.
+     * 
+     * In preview mode, the grid is non-interactive and shows the final puzzle.
+     * In edit mode, users can modify the grid and input answers.
+     * 
+     * @type {boolean}
+     * @default false
      */
     @property({ type: Boolean, state: true, attribute: false, 
         hasChanged(newValue: boolean, oldValue: boolean): boolean 
@@ -36,56 +65,106 @@ export class WebwriterWordPuzzleGrid extends LitElement {
     _preview: boolean = false
 
 
+    /**
+     * The puzzle grid data structure containing cell information.
+     * 
+     * A 2D array where each cell contains metadata including:
+     * - white: Whether the cell is part of the puzzle (true) or blocked (false)
+     * - answer: The correct letter for the cell
+     * - number: The clue number if this cell starts a word
+     * - direction: The word direction(s) this cell participates in
+     * 
+     * @type {Cell[][]}
+     * @attr grid
+     * @example
+     * ```javascript
+     * // 3x3 grid with a single word "CAT"
+     * element.grid = [
+     *   [{white: true, answer: 'C', number: 1}, {white: true, answer: 'A'}, {white: true, answer: 'T'}],
+     *   [{white: false}, {white: false}, {white: false}],
+     *   [{white: false}, {white: false}, {white: false}]
+     * ];
+     * ```
+     */
     @property({ type: Array, state: true, attribute: true, reflect: true})
     grid: Cell[][]
     //protected grid: Cell[][]
 
     /**
-     * The DOM grid element of the crossword puzzle. Contains the cells
+     * The HTML div element that contains the rendered grid cells.
      * 
-     * See the constructor {@link WebwriterWordPuzzle.newCrosswordGrid | newCrosswordGrid()}
+     * This is the actual DOM element that displays the puzzle grid.
+     * It contains individual cell elements that users interact with.
+     * 
+     * @type {HTMLDivElement}
+     * @readonly
      */
     @property({ type: HTMLDivElement, state: true, attribute: false})
     gridEl: HTMLDivElement
 
 
     /**
-     * The DOM svg element for the find-the-words puzzle
+     * The SVG element used for find-the-words puzzle overlays.
      * 
+     * When in find-the-words mode, this SVG is used to draw
+     * lines and highlights over found words in the grid.
+     * 
+     * @type {SVGSVGElement}
+     * @readonly
      */
     @property({ type: SVGSVGElement, state: true, attribute: false})
     svgEl: SVGSVGElement
 
     /**
-     * The list of words grouped with their clues, direction, and word number.
+     * Array of words and their clues used to populate the grid.
+     * 
+     * Same structure as the main component's _wordsClues property.
+     * Contains word placement data including coordinates and directions.
+     * 
+     * @type {WordClue[]}
+     * @attr _wordsClues
      */
     @property({ type: Array, state: true, attribute: true, reflect: true})
     _wordsClues: WordClue[]
 
     /**
+     * Current crossword context for tracking active clue.
      * 
+     * Tracks which clue is currently selected/focused, used for
+     * highlighting relevant cells and navigation.
+     * 
+     * @type {CwContext}
      */
     @property({ type: Object, state: true, attribute: false})
     _cwContext
 
     /**
-     * Current row
-     */
-    @state()
-    cur_row: number // @type {boolean}
-
-    /**
-     * Current column
-     */
-    @state()
-    cur_col: number // @type {boolean}
-
-
-    /**
-     * @constructor
-     * Some constructor I apparently thought was a good idea.
+     * Currently focused row in the grid (0-indexed).
      * 
-     * Pretty much just makes a grid with 9x9 dimensions
+     * Used for keyboard navigation and tracking cursor position.
+     * 
+     * @type {number}
+     */
+    @state()
+    cur_row: number
+
+    /**
+     * Currently focused column in the grid (0-indexed).
+     * 
+     * Used for keyboard navigation and tracking cursor position.
+     * 
+     * @type {number}
+     */
+    @state()
+    cur_col: number
+
+
+    /**
+     * Creates a new grid component.
+     * 
+     * Initializes a default 9x9 grid and sets up the crossword context.
+     * 
+     * @param parentComponent - Reference to the parent word puzzle component
      */
     constructor(private parentComponent: WebwriterWordPuzzle) {
         super()
@@ -220,10 +299,20 @@ export class WebwriterWordPuzzleGrid extends LitElement {
     }
 
          /**
-         * Dispatches an event to change the current clue and direction context.
+         * Dispatches an event to update the current clue context.
          * 
-         * @param {number} clue the updated clue number
-         * @param {boolean} across whether the updated direction is across
+         * Updates the crossword context (which clue is active) and notifies
+         * parent components. This is used for highlighting active clues and
+         * coordinating keyboard navigation.
+         * 
+         * @param context - The new crossword context containing clue info
+         * @fires set-context - Bubbles up to parent with new context
+         * 
+         * @example
+         * ```javascript
+         * // Set context to across clue #5
+         * grid.setContext({ across: true, clue: 5 });
+         * ```
          */
     setContext(context: CwContext): void {
         let setContext = new CustomEvent("set-context", {bubbles: true, composed: true, detail: context})
@@ -274,7 +363,20 @@ export class WebwriterWordPuzzleGrid extends LitElement {
         }
 
     /**
-     * Method for checking the answers.
+     * Validates user answers against the correct solution.
+     * 
+     * Checks all user-entered letters against the correct answers and
+     * provides visual feedback. For crosswords, highlights incorrect
+     * letters. For find-the-words, shows/highlights the solution.
+     * 
+     * @param grid - The puzzle grid data with correct answers
+     * @param gridDOM - The DOM element containing the interactive grid
+     * 
+     * @example
+     * ```javascript
+     * // Check answers for the current puzzle
+     * gridComponent.checkAnswers(puzzleGrid, gridElement);
+     * ```
      */
     checkAnswers(grid: Cell[][], gridDOM: HTMLDivElement) {
         DEV: console.log("Checking answers")
@@ -490,10 +592,24 @@ export class WebwriterWordPuzzleGrid extends LitElement {
 
      /**
      * Generates crossword puzzle based off of words in the clue box, without given coordinates.
-     * Calls the function in crossword-gen
+     /**
+     * Generates a crossword puzzle layout from a list of words and clues.
      * 
-     * @param {WordClue[]} wordsClues The list of words and clues from which to generate the crossword
-     * @returns {WordClue[]} 
+     * Uses a sophisticated algorithm to automatically place words in the grid,
+     * finding optimal intersections and arranging them in a crossword pattern.
+     * Updates the grid data structure and re-renders the DOM.
+     * 
+     * @param wordsCluesInput - Array of words and clues to place in the puzzle
+     * @returns Array of successfully placed words with their positions and clue numbers
+     * 
+     * @example
+     * ```javascript
+     * const words = [
+     *   { word: "CAT", clueText: "Feline pet" },
+     *   { word: "DOG", clueText: "Canine companion" }
+     * ];
+     * const placedWords = gridComponent.generateCrossword(words);
+     * ```
      */
     generateCrossword(wordsCluesInput: WordClue[]): WordClue[] {
         let {wordsAndClues, grid} = generateCrossword(wordsCluesInput)
