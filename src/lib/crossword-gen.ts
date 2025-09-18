@@ -7,52 +7,181 @@
  */
 
 /**
- * Cell object for the crossword grid.
- * Maybe use this for the logic eventually
+ * Represents a single cell in the puzzle grid.
+ * 
+ * Each cell in the grid contains information about its state, content,
+ * and role in the puzzle layout. Cells can be either "white" (accepts letters)
+ * or "black" (blocked/decorative).
+ * 
+ * @example Basic white cell
  * ```typescript
- * {
- *     white: boolean;
- *     answer: string;
- *     number: number;
- *     direction: string;
- * }
+ * const cell: Cell = {
+ *   white: true,
+ *   answer: "A",
+ *   number: null,
+ *   direction: "across"
+ * };
+ * ```
+ * 
+ * @example Numbered starting cell
+ * ```typescript
+ * const startCell: Cell = {
+ *   white: true,
+ *   answer: "C",
+ *   number: 1,
+ *   direction: "both"  // Word starts both across and down
+ * };
+ * ```
+ * 
+ * @example Blocked cell
+ * ```typescript
+ * const blockedCell: Cell = {
+ *   white: false,
+ *   answer: null,
+ *   number: null,
+ *   direction: null
+ * };
  * ```
  */
 export interface Cell {
+    /** 
+     * Whether this cell accepts letter input.
+     * - `true`: White cell that can contain letters
+     * - `false`: Black/blocked cell for spacing and decoration
+     */
     white: boolean;
-/** The correct character */
-    answer?: string; // Correct letter
-/** The clue number. Can be null for white cells */
+    
+    /** 
+     * The correct letter for this cell.
+     * - For crosswords: The solution letter
+     * - For word search: The letter at this grid position
+     * - `null` for blocked cells
+     */
+    answer?: string;
+    
+    /** 
+     * Clue number displayed in this cell (if any).
+     * - Only set for cells where words begin
+     * - Used for crossword clue numbering
+     * - `null` for continuation cells and blocked cells
+     */
     number?: number;
-/** Direction of the word. Down, across, both, or null */
+    
+    /** 
+     * Direction(s) of words passing through this cell.
+     * - `"across"`: Horizontal word only
+     * - `"down"`: Vertical word only  
+     * - `"both"`: Both horizontal and vertical words intersect
+     * - `null`: No words (blocked cells)
+     */
     direction?: string;
 }
 
-/** Custom data type for words placed on the grid.
- * Includes word itself and coordinates.
+/** 
+ * Represents a word and its associated metadata for puzzle generation and display.
+ * 
+ * This interface is used throughout the puzzle system to track words,
+ * their clues, and their placement on the grid. It supports both crossword
+ * and word search puzzle types.
+ * 
+ * **For puzzle creation:**
+ * - Only `word` and optionally `clueText` need to be provided
+ * - Grid coordinates and numbering are auto-generated during puzzle generation
+ * 
+ * **For solved puzzles:**
+ * - All fields are populated after successful puzzle generation
+ * - Coordinates indicate where the word appears on the grid
+ * 
+ * @example Input for crossword creation
  * ```typescript
- * {
- *     word: string;
- *     clue: string;
- *     x: number;
- *     y: number;
- *     direction: string;
- *     number: number;
- * }
+ * const words: WordClue[] = [
+ *   { word: "CAT", clueText: "Domestic feline" },
+ *   { word: "DOG", clueText: "Man's best friend" },
+ *   { word: "BIRD", clueText: "Feathered flying animal" }
+ * ];
  * ```
- * */
+ * 
+ * @example Input for word search creation
+ * ```typescript
+ * const words: WordClue[] = [
+ *   { word: "APPLE" },
+ *   { word: "BANANA" },
+ *   { word: "CHERRY" },
+ *   { word: "DATE" }
+ * ];
+ * ```
+ * 
+ * @example After puzzle generation
+ * ```typescript
+ * const placedWord: WordClue = {
+ *   word: "CAT",
+ *   clueText: "Domestic feline",
+ *   x: 0,
+ *   y: 0,
+ *   across: true,
+ *   clueNumber: 1
+ * };
+ * ```
+ */
 export interface WordClue {
-    /** The word in question */
+    /** 
+     * The word to be placed in the puzzle.
+     * 
+     * Should contain only uppercase letters A-Z for best results.
+     * Minimum length of 2 characters recommended.
+     * 
+     * @example "CROSSWORD"
+     */
     word: string,
-    /** The text for the clue */
+    
+    /** 
+     * The clue text that describes this word.
+     * 
+     * Required for crossword puzzles, optional for word search.
+     * Should be clear and unambiguous to provide fair solving experience.
+     * 
+     * @example "Word puzzle with intersecting answers"
+     */
     clueText?: string,
-    /** (0-indexed) starting x-coordinate of the word on the grid*/
+    
+    /** 
+     * Starting column position on the grid (0-based).
+     * 
+     * Automatically assigned during puzzle generation.
+     * Indicates the leftmost position for across words,
+     * or the column position for down words.
+     */
     x?: number,
-    /** (0-indexed) starting y-coordinate of the word on the grid*/
+    
+    /** 
+     * Starting row position on the grid (0-based).
+     * 
+     * Automatically assigned during puzzle generation.
+     * Indicates the topmost position for down words,
+     * or the row position for across words.
+     */
     y?: number,
-    /** Whether the word is across or down */
+    
+    /** 
+     * Direction of the word placement.
+     * 
+     * - `true`: Word placed horizontally (across)
+     * - `false`: Word placed vertically (down)
+     * 
+     * Automatically assigned during crossword generation.
+     * Not used for word search puzzles.
+     */
     across?: boolean,
-    /** Number of the clue */
+    
+    /** 
+     * The clue number for crossword puzzles.
+     * 
+     * Automatically assigned during puzzle generation.
+     * Corresponds to the number displayed in the grid cell
+     * where this word begins.
+     * 
+     * @example 1, 2, 3, etc.
+     */
     clueNumber?: number
 }
 

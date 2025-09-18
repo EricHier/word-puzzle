@@ -20,15 +20,69 @@ import "@shoelace-style/shoelace/dist/themes/light.css";
 const DEFAULT_DIMENSION: number = 9
 
 /**
- * Crossword element for word puzzle widget. Includes grid and clue panel elements.
- * @returns { void } Nothing, but renders the DOM element for the crossword puzzle
+ * Grid component for displaying and interacting with word puzzle grids.
+ * 
+ * This component renders the main puzzle grid where letters are placed and users
+ * can interact to solve puzzles. It supports both crossword and word search formats
+ * with different interaction patterns for each.
+ * 
+ * Features:
+ * - Keyboard navigation for crossword solving
+ * - Answer validation and visual feedback
+ * - Grid highlighting for active clues
+ * - Automatic puzzle generation and layout
+ * - Touch-friendly interface for mobile devices
+ * 
+ * @element webwriter-word-puzzle-grid
+ * @since 1.0.0
+ * @status stable
+ * 
+ * @dependency @shoelace-style/shoelace
+ * 
+ * @example Basic crossword grid
+ * ```html
+ * <webwriter-word-puzzle-grid></webwriter-word-puzzle-grid>
+ * ```
+ * 
+ * @fires cell-click - When a grid cell is clicked or focused
+ * @fires answer-input - When user types in a cell
+ * @fires word-found - When a word is successfully found in word search
+ * 
+ * @csspart grid - The main grid container
+ * @csspart cell - Individual grid cells
+ * @csspart cell-number - Cell numbers for crossword clues
+ * @csspart cell-active - Currently selected/highlighted cells
+ * @csspart cell-correct - Cells with correct answers
+ * @csspart cell-incorrect - Cells with incorrect answers
+ * 
+ * @cssproperty [--grid-cell-size=30px] - Size of grid cells
+ * @cssproperty [--grid-border-width=1px] - Border width for cells
+ * @cssproperty [--grid-font-size=16px] - Font size for cell content
+ * @cssproperty [--grid-active-color=#e3f2fd] - Background color for active cells
+ * @cssproperty [--grid-correct-color=#c8e6c9] - Background color for correct answers
+ * @cssproperty [--grid-incorrect-color=#ffcdd2] - Background color for incorrect answers
+ */
+/**
+ * Grid component for displaying and interacting with word puzzle grids.
  */
 @customElement("webwriter-word-puzzle-grid")
 export class WebwriterWordPuzzleGrid extends LitElement {
     // All methods have the same names as in crosswords-js
 
     /**
-     * Whether the current display is a preview
+     * Controls whether the grid is in preview/solving mode or edit mode.
+     * 
+     * In preview mode (true):
+     * - Users can input answers to solve the puzzle
+     * - Grid cells are interactive for typing
+     * - Answer checking is available
+     * 
+     * In edit mode (false): 
+     * - Grid shows the solution state
+     * - Cells display correct answers
+     * - Used for puzzle creation and editing
+     * 
+     * @default false
      */
     @property({ type: Boolean, state: true, attribute: false, 
         hasChanged(newValue: boolean, oldValue: boolean): boolean 
@@ -36,49 +90,93 @@ export class WebwriterWordPuzzleGrid extends LitElement {
     _preview: boolean = false
 
 
+    /**
+     * 2D array representing the puzzle grid structure.
+     * 
+     * Each cell contains:
+     * - `white`: Whether the cell accepts letters (true) or is blocked (false)
+     * - `answer`: The correct letter for this cell
+     * - `number`: Clue number if this cell starts a word
+     * - `direction`: Word direction(s) through this cell ("across", "down", "both")
+     * 
+     * @example Grid structure
+     * ```typescript
+     * [
+     *   [
+     *     { white: true, answer: "C", number: 1, direction: "across" },
+     *     { white: true, answer: "A", number: null, direction: "across" },
+     *     { white: true, answer: "T", number: null, direction: "across" }
+     *   ],
+     *   // ... more rows
+     * ]
+     * ```
+     */
     @property({ type: Array, state: true, attribute: true, reflect: true})
     grid: Cell[][]
-    //protected grid: Cell[][]
 
     /**
-     * The DOM grid element of the crossword puzzle. Contains the cells
+     * Reference to the HTML div element that contains the rendered grid.
      * 
-     * See the constructor {@link WebwriterWordPuzzle.newCrosswordGrid | newCrosswordGrid()}
+     * This element contains all the individual cell divs and handles
+     * grid-level interactions like keyboard navigation and focus management.
+     * 
+     * @internal - Managed automatically by the component
      */
     @property({ type: HTMLDivElement, state: true, attribute: false})
     gridEl: HTMLDivElement
 
-
     /**
-     * The DOM svg element for the find-the-words puzzle
+     * Reference to the SVG element used for word search puzzle highlighting.
      * 
+     * Used to draw lines over found words in word search puzzles,
+     * providing visual feedback when words are discovered.
+     * 
+     * Only used for "find-the-words" puzzle type.
+     * 
+     * @internal - Managed automatically by the component
      */
     @property({ type: SVGSVGElement, state: true, attribute: false})
     svgEl: SVGSVGElement
 
     /**
-     * The list of words grouped with their clues, direction, and word number.
+     * Array of words and clues associated with this grid.
+     * 
+     * Synchronized with the parent component's word list.
+     * Used for puzzle generation and answer validation.
+     * 
+     * @see WebwriterWordPuzzle._wordsClues for complete documentation
      */
     @property({ type: Array, state: true, attribute: true, reflect: true})
     _wordsClues: WordClue[]
 
     /**
+     * Current interaction context for crossword puzzles.
      * 
+     * Tracks which clue/direction is active for highlighting
+     * and keyboard navigation purposes.
+     * 
+     * @internal - Synchronized with parent component
      */
     @property({ type: Object, state: true, attribute: false})
     _cwContext
 
     /**
-     * Current row
+     * Currently selected row in the grid (0-based index).
+     * 
+     * Used for keyboard navigation and cell highlighting.
+     * Updated when user clicks cells or uses arrow keys.
      */
     @state()
-    cur_row: number // @type {boolean}
+    cur_row: number
 
     /**
-     * Current column
+     * Currently selected column in the grid (0-based index).
+     * 
+     * Used for keyboard navigation and cell highlighting.
+     * Updated when user clicks cells or uses arrow keys.
      */
     @state()
-    cur_col: number // @type {boolean}
+    cur_col: number
 
 
     /**
