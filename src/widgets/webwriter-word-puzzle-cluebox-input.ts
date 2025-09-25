@@ -27,8 +27,71 @@ import LOCALIZE from "../../localization/generated"
 
 
 /**
- * Crossword element for word puzzle widget. Includes grid and clue panel elements.
- * @returns { void } Nothing, but renders the DOM element for the crossword puzzle
+ * Authoring interface for creating and editing word puzzles.
+ * 
+ * This component provides the editing interface for puzzle creators (teachers/authors).
+ * It allows adding words, editing clues, and generating puzzle layouts. Only visible
+ * when the main component is in edit mode (contenteditable attribute present).
+ * 
+ * **Features:**
+ * - Interactive table for adding/removing words and clues
+ * - Real-time puzzle generation
+ * - Drag-and-drop word reordering
+ * - Bulk import/export of word lists
+ * - Input validation and error feedback
+ * 
+ * **Keyboard shortcuts:**
+ * - `Ctrl+Enter`: Generate puzzle from current word list
+ * - `Tab`: Navigate between word/clue fields
+ * - `Enter`: Add new row when in last field
+ * 
+ * @element webwriter-word-puzzle-cluebox-input
+ * @since 1.0.0
+ * @status stable
+ * 
+ * @dependency @shoelace-style/shoelace
+ * 
+ * @example Basic usage (automatically included in edit mode)
+ * ```html
+ * <webwriter-word-puzzle contenteditable>
+ *   <!-- cluebox-input component appears automatically -->
+ * </webwriter-word-puzzle>
+ * ```
+ * 
+ * @example Programmatic word list management
+ * ```typescript
+ * const input = document.querySelector('webwriter-word-puzzle-cluebox-input');
+ * input.setWordsClues([
+ *   { word: "CAT", clueText: "Feline pet" },
+ *   { word: "DOG", clueText: "Canine companion" }
+ * ]);
+ * input.triggerCwGeneration(); // Generate puzzle
+ * ```
+ * 
+ * @fires generateCw - When puzzle generation is requested
+ * @fires set-words-clues - When word/clue data is updated
+ * @fires word-added - When a new word is added to the list
+ * @fires word-removed - When a word is removed from the list
+ * 
+ * @csspart drawer - Main editing interface container (drawer/modal)
+ * @csspart word-table - Table containing word/clue input fields
+ * @csspart word-input - Individual word input fields
+ * @csspart clue-input - Individual clue input fields
+ * @csspart add-button - Button for adding new word rows
+ * @csspart remove-button - Buttons for removing word rows
+ * @csspart generate-button - Main puzzle generation button
+ * @csspart validation-message - Error/warning messages
+ * 
+ * @cssproperty [--input-font-size=14px] - Font size for input fields
+ * @cssproperty [--table-border-color=#ddd] - Border color for table elements
+ * @cssproperty [--button-primary-color=#2196f3] - Primary button color
+ * @cssproperty [--button-success-color=#4caf50] - Success button color
+ * @cssproperty [--button-danger-color=#f44336] - Danger/remove button color
+ * @cssproperty [--validation-error-color=#d32f2f] - Color for error messages
+ * @cssproperty [--validation-warning-color=#f57c00] - Color for warning messages
+ */
+/**
+ * Authoring interface for creating and editing word puzzles.
  */
 @localized()
 @customElement("webwriter-word-puzzle-cluebox-input")
@@ -38,37 +101,64 @@ export class WebwriterWordPuzzleClueboxInput extends LitElememt {
     public localize = LOCALIZE
 
     /**
-     * Whether the current display is a preview
+     * Controls whether the input interface is in preview/readonly mode.
+     * 
+     * When true, the editing interface is hidden and users cannot modify
+     * the word list. When false, full editing capabilities are available.
+     * 
+     * @default false
      */
     @property({ type: Boolean, state: true, attribute: false })
     _preview: boolean = false
 
     /**
-     * The input element for the words and clues of the crossword puzzle. 
+     * Reference to the main word/clue input table element.
      * 
-     * It's intended exclusively for use by crossword creators (i.e. teachers).
+     * This table contains rows for each word with input fields for:
+     * - Word text (required)
+     * - Clue text (required for crosswords, optional for word search)
+     * - Add/remove buttons for managing rows
      * 
-     * See the constructor {@link WebwriterWordPuzzle.newClueBox | newClueBox()}
+     * @internal - Managed automatically by the component
      */
     @query(".clueboxInput")
     accessor clueboxInput: HTMLTableElement
 
     /**
-     * The list of words grouped with their clues, direction, and word number.
+     * Current list of words and clues being edited.
+     * 
+     * This is the working copy that gets modified as users add, remove,
+     * or edit words in the interface. Changes are synchronized with the
+     * parent component when puzzle generation is triggered.
+     * 
+     * @example Structure during editing
+     * ```typescript
+     * [
+     *   { word: "CAT", clueText: "Pet feline" },
+     *   { word: "DOG", clueText: "Pet canine" },
+     *   { word: "", clueText: "" }  // Empty row for new input
+     * ]
+     * ```
      */
     @property({type: Array, attribute: false})
     _wordsClues: WordClue[] = [{word: "", across: true}]
 
     /**
-     * drawer
+     * Reference to the slide-out drawer/modal containing the editing interface.
+     * 
+     * The drawer provides a focused editing environment that can be opened
+     * and closed without disrupting the main puzzle view.
+     * 
+     * @internal - Managed automatically by the component
      */
     @query("sl-drawer")
     accessor drawer: SlDrawer
 
     /**
-     * @constructor
+     * Initializes the word/clue input component.
      * 
-     * Does nothing I guess
+     * @param parentComponent - Reference to the parent puzzle component
+     * @internal
      */
     constructor(private parentComponent: WebwriterWordPuzzle) {
         super()
