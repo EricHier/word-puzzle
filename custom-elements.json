@@ -8,8 +8,60 @@
       "declarations": [
         {
           "kind": "class",
-          "description": "Crossword element for word puzzle widget. Includes grid and clue panel elements.",
+          "description": "Main web component for creating and displaying word puzzles (crosswords and word search).\r\nThis component provides a complete word puzzle interface with grid, clue management,\r\nand interactive solving capabilities. It supports two puzzle types:\r\n- **crossword**: Traditional crossword puzzles with numbered clues\r\n- **find-the-words**: Word search puzzles where words are hidden in the grid\r\n@element webwriter-word-puzzle\r\n@since 1.0.0\r\n@status stable\r\n@dependency @shoelace-style/shoelace\r\n@dependency @webwriter/lit\r\n@example Basic usage\r\n```html\r\n<webwriter-word-puzzle type=\"crossword\"></webwriter-word-puzzle>\r\n```\r\n@example With predefined words and clues\r\n```html\r\n<webwriter-word-puzzle \r\n  type=\"crossword\"\r\n  _wordsClues='[{\"word\":\"CAT\",\"clueText\":\"Feline pet\"},{\"word\":\"DOG\",\"clueText\":\"Canine companion\"}]'>\r\n</webwriter-word-puzzle>\r\n```\r\n@example Word search puzzle\r\n```html\r\n<webwriter-word-puzzle \r\n  type=\"find-the-words\"\r\n  _wordsClues='[{\"word\":\"APPLE\"},{\"word\":\"BANANA\"},{\"word\":\"CHERRY\"}]'>\r\n</webwriter-word-puzzle>\r\n```\r\n@fires generateCw - Triggered when crossword generation is requested\r\n@fires set-context - Triggered when user selects a cell or clue in crossword mode\r\n@fires set-words-clues - Triggered when word/clue data is updated\r\n@slot - Default slot for additional content (rarely used)\r\n@csspart options - Container for puzzle type selector (visible in edit mode)\r\n@csspart grid-wrapper - Container for the puzzle grid and action buttons\r\n@csspart cluebox-wrapper - Container for clue panels\r\n@cssproperty [--crossword-cell-size=30px] - Size of individual grid cells\r\n@cssproperty [--crossword-border-color=#ccc] - Border color for grid cells\r\n@cssproperty [--crossword-background=#fff] - Background color for white cells\r\n@cssproperty [--crossword-blocked-background=#000] - Background color for blocked cells\r\n@cssproperty [--crossword-highlight-color=#e3f2fd] - Highlight color for active cells\r\n@cssproperty [--clue-font-size=14px] - Font size for clue text",
           "name": "WebwriterWordPuzzle",
+          "cssProperties": [
+            {
+              "description": "Size of individual grid cells",
+              "name": "--crossword-cell-size",
+              "default": "30px"
+            },
+            {
+              "description": "Border color for grid cells",
+              "name": "--crossword-border-color",
+              "default": "#ccc"
+            },
+            {
+              "description": "Background color for white cells",
+              "name": "--crossword-background",
+              "default": "#fff"
+            },
+            {
+              "description": "Background color for blocked cells",
+              "name": "--crossword-blocked-background",
+              "default": "#000"
+            },
+            {
+              "description": "Highlight color for active cells",
+              "name": "--crossword-highlight-color",
+              "default": "#e3f2fd"
+            },
+            {
+              "description": "Font size for clue text",
+              "name": "--clue-font-size",
+              "default": "14px"
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "Container for puzzle type selector (visible in edit mode)",
+              "name": "options"
+            },
+            {
+              "description": "Container for the puzzle grid and action buttons",
+              "name": "grid-wrapper"
+            },
+            {
+              "description": "Container for clue panels",
+              "name": "cluebox-wrapper"
+            }
+          ],
+          "slots": [
+            {
+              "description": "Default slot for additional content (rarely used)",
+              "name": ""
+            }
+          ],
           "members": [
             {
               "kind": "field",
@@ -41,57 +93,20 @@
               "type": {
                 "text": "WordClue[]"
               },
-              "description": "The list of words grouped with their clues, direction, and word number.",
+              "description": "Array of words and their associated clues for the puzzle.\n\nEach WordClue object contains:\n- `word`: The word to place in the puzzle (required)\n- `clueText`: The clue text for crosswords (optional for word search)\n- `x`, `y`: Grid coordinates (auto-generated during puzzle creation)\n- `across`: Direction for crosswords (auto-generated)\n- `clueNumber`: Clue number for crosswords (auto-generated)",
+              "default": "[]",
               "attribute": "_wordsClues",
               "reflects": true
             },
             {
               "kind": "field",
-              "name": "gridW",
-              "type": {
-                "text": "WebwriterWordPuzzleGrid"
-              },
-              "privacy": "private",
-              "description": "The DOM grid element of the crossword puzzle. Contains the cells\n\nSee the constructor WebwriterWordPuzzle.newCrosswordGrid| newCrosswordGrid()",
-              "default": "new WebwriterWordPuzzleGrid(this)"
-            },
-            {
-              "kind": "field",
-              "name": "clueInpW",
-              "type": {
-                "text": "WebwriterWordPuzzleClueboxInput"
-              },
-              "privacy": "private",
-              "description": "The panel element of the crossword puzzle, containing the words and clues. (WIP)\n\nSee the constructor WebwriterWordPuzzle.newClueBox| newClueBox()",
-              "default": "new WebwriterWordPuzzleClueboxInput(this)"
-            },
-            {
-              "kind": "field",
-              "name": "clueW",
-              "type": {
-                "text": "WebwriterWordPuzzleCluebox"
-              },
-              "privacy": "private",
-              "description": "The panel element of the crossword puzzle, containing the words and clues. (WIP)\n\nSee the constructor WebwriterWordPuzzle.newClueBox| newClueBox()",
-              "default": "new WebwriterWordPuzzleCluebox(this)"
-            },
-            {
-              "kind": "field",
-              "name": "_cwContext",
-              "type": {
-                "text": "CwContext"
-              },
-              "description": "Current crossword context; across and clue number"
-            },
-            {
-              "kind": "field",
               "name": "type",
               "type": {
-                "text": "'crossword' | 'find-the-words'"
+                "text": "\"crossword\" | \"find-the-words\""
               },
               "privacy": "public",
               "default": "'crossword'",
-              "description": "Type of word puzzle",
+              "description": "Type of word puzzle to display and interact with.\n\n- **\"crossword\"**: Traditional crossword with numbered clues across and down\n- **\"find-the-words\"**: Word search where players find hidden words in a grid\n\nChanging this property will update the UI to show appropriate controls and layout.",
               "attribute": "type",
               "reflects": true
             },
@@ -109,6 +124,131 @@
               ]
             },
             {
+              "kind": "method",
+              "name": "setWords",
+              "privacy": "public",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "words",
+                  "type": {
+                    "text": "WordClue[]"
+                  },
+                  "description": "Array of WordClue objects containing words and optional clues"
+                },
+                {
+                  "name": "regenerate",
+                  "default": "true",
+                  "type": {
+                    "text": "boolean"
+                  },
+                  "description": "Whether to automatically regenerate the puzzle layout (default: true)"
+                }
+              ],
+              "description": "Sets the words and clues for the puzzle and triggers regeneration.\n\nThis is the main API method for programmatically setting puzzle content.\nIt updates the word list and automatically regenerates the puzzle layout\nif in crossword mode."
+            },
+            {
+              "kind": "method",
+              "name": "addWord",
+              "privacy": "public",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "word",
+                  "type": {
+                    "text": "string"
+                  },
+                  "description": "The word to add"
+                },
+                {
+                  "name": "clueText",
+                  "optional": true,
+                  "type": {
+                    "text": "string"
+                  },
+                  "description": "Optional clue text (required for crosswords)"
+                },
+                {
+                  "name": "regenerate",
+                  "default": "true",
+                  "type": {
+                    "text": "boolean"
+                  },
+                  "description": "Whether to regenerate the puzzle (default: true)"
+                }
+              ],
+              "description": "Adds a single word to the existing puzzle.\n\nConvenience method for adding individual words without replacing\nthe entire word list. Automatically triggers puzzle regeneration\nfor crosswords."
+            },
+            {
+              "kind": "method",
+              "name": "removeWord",
+              "privacy": "public",
+              "return": {
+                "type": {
+                  "text": ""
+                }
+              },
+              "parameters": [
+                {
+                  "name": "word",
+                  "type": {
+                    "text": "string"
+                  },
+                  "description": "The word text to remove (case insensitive)"
+                },
+                {
+                  "name": "regenerate",
+                  "default": "true",
+                  "type": {
+                    "text": "boolean"
+                  },
+                  "description": "Whether to regenerate the puzzle (default: true)"
+                }
+              ],
+              "description": "Removes a word from the puzzle by word text."
+            },
+            {
+              "kind": "method",
+              "name": "clearWords",
+              "privacy": "public",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "description": "Clears all words and clues from the puzzle.\n\n@example Clearing the puzzle\n```typescript\npuzzle.clearWords();\n```"
+            },
+            {
+              "kind": "method",
+              "name": "getWords",
+              "privacy": "public",
+              "return": {
+                "type": {
+                  "text": ""
+                }
+              },
+              "description": "Gets the current word list."
+            },
+            {
+              "kind": "method",
+              "name": "generatePuzzle",
+              "privacy": "public",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "description": "Manually triggers puzzle generation for crosswords.\n\nUsually called automatically when words are modified, but can be\ncalled manually if needed. Only affects crossword puzzles.\n\n@example Manual generation\n```typescript\npuzzle.generatePuzzle();\n```"
+            },
+            {
               "kind": "field",
               "name": "scopedElements",
               "privacy": "protected",
@@ -119,29 +259,40 @@
               "kind": "method",
               "name": "generateCrossword",
               "privacy": "protected",
-              "description": "Generates crossword puzzle based off of words in the clue box and \nwrites it to the DOM.\n\nBased off of Agarwal and Joshi 2020"
+              "description": "Generates a crossword puzzle layout from the current word list.\n\nUses a placement algorithm based on Agarwal and Joshi 2020 to automatically\narrange words on the grid with optimal intersections. Updates the grid\nwith placed words and assigns clue numbers.\n\nThis method is called automatically when:\n- Words are added/modified in edit mode\n- The \"Generate puzzle\" button is clicked\n- A generateCw event is dispatched\n\n@example Manually trigger puzzle generation\n```typescript\npuzzle._wordsClues = [\n{ word: \"CAT\", clueText: \"Pet feline\" },\n{ word: \"DOG\", clueText: \"Pet canine\" }\n];\npuzzle.generateCrossword();\n```"
             },
             {
-              "kind": "method",
-              "name": "onPreviewToggle",
-              "privacy": "protected",
-              "return": {
-                "type": {
-                  "text": "boolean"
-                }
-              },
-              "parameters": [
-                {
-                  "name": "newValue",
-                  "type": {
-                    "text": "boolean"
-                  }
-                }
-              ]
+              "kind": "field",
+              "name": "gridW",
+              "default": "new WebwriterWordPuzzleGrid(this)"
+            },
+            {
+              "kind": "field",
+              "name": "clueW",
+              "default": "new WebwriterWordPuzzleCluebox(this)"
+            },
+            {
+              "kind": "field",
+              "name": "clueInpW",
+              "default": "new WebwriterWordPuzzleClueboxInput(this)"
             },
             {
               "kind": "field",
               "name": "grid"
+            }
+          ],
+          "events": [
+            {
+              "description": "Triggered when crossword generation is requested",
+              "name": "generateCw"
+            },
+            {
+              "description": "Triggered when user selects a cell or clue in crossword mode",
+              "name": "set-context"
+            },
+            {
+              "description": "Triggered when word/clue data is updated",
+              "name": "set-words-clues"
             }
           ],
           "attributes": [
@@ -150,17 +301,20 @@
               "type": {
                 "text": "WordClue[]"
               },
-              "description": "The list of words grouped with their clues, direction, and word number.",
-              "fieldName": "_wordsClues"
+              "description": "Array of words and their associated clues for the puzzle.\n\nEach WordClue object contains:\n- `word`: The word to place in the puzzle (required)\n- `clueText`: The clue text for crosswords (optional for word search)\n- `x`, `y`: Grid coordinates (auto-generated during puzzle creation)\n- `across`: Direction for crosswords (auto-generated)\n- `clueNumber`: Clue number for crosswords (auto-generated)",
+              "default": "[]",
+              "fieldName": "_wordsClues",
+              "attribute": "_wordsClues"
             },
             {
               "name": "type",
               "type": {
-                "text": "'crossword' | 'find-the-words'"
+                "text": "\"crossword\" | \"find-the-words\""
               },
               "default": "'crossword'",
-              "description": "Type of word puzzle",
-              "fieldName": "type"
+              "description": "Type of word puzzle to display and interact with.\n\n- **\"crossword\"**: Traditional crossword with numbered clues across and down\n- **\"find-the-words\"**: Word search where players find hidden words in a grid\n\nChanging this property will update the UI to show appropriate controls and layout.",
+              "fieldName": "type",
+              "attribute": "type"
             }
           ],
           "superclass": {
