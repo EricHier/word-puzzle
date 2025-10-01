@@ -5,7 +5,7 @@
  * @module crossword
  * @mergeModuleWith webwriter-word-puzzles
  */
-import { html, render } from 'lit';
+import { html, render, LitElement } from 'lit';
 import { customElement, property, query } from 'lit/decorators.js';
 import { WebwriterWordPuzzle } from './webwriter-word-puzzle';
 import { WordClue } from '../lib/crossword-gen';
@@ -95,7 +95,7 @@ import LOCALIZE from "../../localization/generated"
  */
 @localized()
 @customElement("webwriter-word-puzzle-cluebox-input")
-export class WebwriterWordPuzzleClueboxInput extends LitElememt {
+export class WebwriterWordPuzzleClueboxInput extends LitElement {
     // All methods have the same names as in crosswords-js
 
     public localize = LOCALIZE

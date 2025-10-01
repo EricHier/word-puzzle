@@ -5,7 +5,7 @@
  * @module crossword
  * @mergeModuleWith webwriter-word-puzzles
  */
-import { html, HTMLTemplateResult } from 'lit';
+import { html, HTMLTemplateResult, LitElement } from 'lit';
 import { customElement, property, query } from 'lit/decorators.js';
 import { CwContext, WebwriterWordPuzzle } from './webwriter-word-puzzle';
 import { WordClue } from '../lib/crossword-gen';

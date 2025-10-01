@@ -4,7 +4,7 @@
  * @packageDocumentation
  * @module crossword
  */
-import { html } from 'lit';
+import { html, LitElement } from 'lit';
 import { customElement, property, state, query } from 'lit/decorators.js';
 import { WebwriterWordPuzzle, CwContext } from './webwriter-word-puzzle';
 import { WordClue, Cell, defaultCell, newCellDOM, GenerationResults, generateCrossword, generateCrosswordFromList } from '../lib/crossword-gen'

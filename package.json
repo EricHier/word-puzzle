@@ -1,6 +1,6 @@
 {
   "name": "@webwriter/word-puzzle",
-  "version": "1.0.3",
+  "version": "1.0.5",
   "description": "Crossword and word search puzzle creation tool featuring customizable grids, clues, and interactive solving.",
   "keywords": [
     "webwriter-widget",
